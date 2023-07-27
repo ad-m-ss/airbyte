@@ -4,6 +4,7 @@ from source_adaptive.adaptive.base import get_config_as_dict
 from source_adaptive.adaptive.exportAccounts import AdaptiveExportAccounts
 from source_adaptive.adaptive.exportAttributes import AdaptiveExportAttributes
 from source_adaptive.adaptive.exportData import AdaptiveExportData
+from source_adaptive.adaptive.exportDimensions import AdaptiveExportDimensions
 from source_adaptive.adaptive.exportVersions import AdaptiveExportVersions
 
 from airbyte_cdk.logger import AirbyteLogger
@@ -20,6 +21,7 @@ def generate_adaptive_method(logger: AirbyteLogger, config: json):
         "exportAccounts": AdaptiveExportAccounts,
         "exportAttributes": AdaptiveExportAttributes,
         "exportData": AdaptiveExportData,
+        "exportDimensions": AdaptiveExportDimensions,
         "exportVersions": AdaptiveExportVersions,
     }
 

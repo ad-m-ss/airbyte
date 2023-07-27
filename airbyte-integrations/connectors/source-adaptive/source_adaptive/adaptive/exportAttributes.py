@@ -83,6 +83,5 @@ class AdaptiveExportAttributes(Adaptive):
         for response in self.perform_request():
             response_data = self.get_data_from_response(response)
             for row in response_data["attributes"]["attribute"]:
-                print(row)
                 yield from self.parse_attribute_row(data_obj=row,parent_obj={})
 
