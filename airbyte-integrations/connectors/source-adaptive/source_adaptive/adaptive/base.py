@@ -1,4 +1,5 @@
 import requests
+import concurrent.futures
 import json
 
 from abc import ABC, abstractmethod
@@ -16,6 +17,7 @@ from typing import Generator
 
 REQUEST_RETRIES_BEFORE_ERROR = 20
 REQUEST_TIMEOUT = 600
+MAX_PARALLEL_WORKERS = 10
 
 
 def get_config_as_dict(config: json) -> dict:
@@ -85,6 +87,17 @@ class Adaptive(ABC):
                 self.logger.warn("The program has been canceled")
         return response
 
+    # Define a generator function that performs requests in parallel
+    def perform_requests_parallel(self, url, headers, payloads):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_PARALLEL_WORKERS) as executor:
+            # Submit the tasks and obtain the Future objects
+            futures = [executor.submit(self._perform_request, url=url, headers=headers, payload=payload) for payload in payloads]
+
+            # Yield the results as they become available
+            for future in concurrent.futures.as_completed(futures):
+                response = future.result()
+                yield response
+
     def perform_request(self) -> Generator[Response, None, None]:
         """
         Method to be used when retrieval of all data is needed.
@@ -92,8 +105,9 @@ class Adaptive(ABC):
         url = "https://api.adaptiveinsights.com/api/v32"
         headers = {"Content-Type": "application/xml"}
 
-        for payload in self.construct_payload():
-            yield self._perform_request(url=url, payload=payload, headers=headers)
+        # retrieve all payloads at once
+        payloads = [p for p in self.construct_payload()]
+        yield from self.perform_requests_parallel(url=url, payloads=payloads, headers=headers)
 
     def perform_request_fast(self) -> Response:
         """
