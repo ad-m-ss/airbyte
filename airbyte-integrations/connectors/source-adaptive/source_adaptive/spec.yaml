@@ -34,6 +34,23 @@ connectionSpecification:
             order: 0
       - required:
         - method
+        - version
+        title: export Dimensions
+        properties:
+          method:
+            type: string
+            const: "exportDimensions"
+            order: 0
+          version:
+            type: string
+            title: Adaptive Data Version
+            description: >-
+              latest-actuals: Get the latest version that matches the pattern LBEMMYY
+              previous-actuals: Get the second to last version that matches the pattern LBEMMYY
+              prediction: Get the prediction version that matches the pattern AOPYYYY
+            order: 1
+      - required:
+        - method
         title: export Attributes
         properties:
           method:
