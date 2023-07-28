@@ -13,3 +13,12 @@ connectionSpecification:
         Your Select Star Token
       airbyte_secret: true
       order: 0
+    endpoint:
+      title: Endpoint
+      type: string
+      description: Your Select Star API instance URL.
+      default: https://api.production.selectstar.com/v1
+      examples:
+        - https://api.production.selectstar.com/v1
+        - https://api.eu.selectstar.com/v1
+

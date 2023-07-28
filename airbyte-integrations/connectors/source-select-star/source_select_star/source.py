@@ -24,17 +24,17 @@ from airbyte_cdk.sources import Source
 import requests
 
 
-SELECT_STAR_BASE_URL = "https://api.production.selectstar.com/v1"
+DEFAULT_SELECT_STAR_ENDPOINT = "https://api.production.selectstar.com/v1"
 
 
-def request_with_backoff(url, headers, logger):
+def request_with_backoff(url, headers, logger, params=None):
     response = None
     backoff_time = 1
     retries = 0
-    logger.info(f"Perform a GET on {url}")
+    logger.info(f"Perform a GET ({url=}, {params=})")
     while response is None:
         try:
-            response = requests.request("GET", url, headers=headers)
+            response = requests.request("GET", url, params=params, headers=headers)
             if response.status_code == 429:
                 sleep(backoff_time * (2 ** retries))
                 retries = retries + 1
@@ -75,8 +75,10 @@ class SourceSelectStar(Source):
         """
         try:
             # do a dummy get request just to handshake and verify token is valid
-            token = json.loads(json.dumps(config))["token"]
-            table_url = f"{SELECT_STAR_BASE_URL}/tables/"
+            config_prased = json.loads(json.dumps(config))
+            token = config_prased["token"]
+            endpoint = config_prased.get("endpoint") or DEFAULT_SELECT_STAR_ENDPOINT
+            table_url = f"{endpoint}/tables/"
             headers = {"AUTHORIZATION": f"Token {token}"}
             response = requests.request("GET", table_url, headers=headers)
             if response.status_code == 200:
@@ -171,17 +173,25 @@ class SourceSelectStar(Source):
 
         :return: A generator that produces a stream of AirbyteRecordMessage contained in AirbyteMessage object.
         """
-        token = json.loads(json.dumps(config))["token"]
-        table_url = f"{SELECT_STAR_BASE_URL}/tables/"
+        config_prased = json.loads(json.dumps(config))
+        token = config_prased["token"]
+        endpoint = config_prased.get("endpoint") or DEFAULT_SELECT_STAR_ENDPOINT
+
+        table_query = '{guid,database{name},schema{name},name,description,business_owner,technical_owner,row_count}'
+        table_params = {"query": table_query}
+        table_url = f"{endpoint}/tables/"
         headers = {"AUTHORIZATION": f"Token {token}"}
 
         while table_url is not None:
-            table_response = request_with_backoff(table_url, headers, logger)
+            table_response = request_with_backoff(table_url, headers, logger,
+                                                  params=table_params)
             res = table_response.json()
             for table in res["results"]:
 
                 # create table object
                 table_obj = {
+                    # update 'table_query' variable once a new field added to
+                    # the table object
                     "guid": table["guid"],
                     "database_name": table["database"]["name"],
                     "schema_name": table["schema"]["name"],
@@ -199,8 +209,15 @@ class SourceSelectStar(Source):
                 )
 
                 # get lineage for each table
-                lineage_url = f"{SELECT_STAR_BASE_URL}/lineage/{table_obj['guid']}/?max_depth=1&direction=right&mode=table"
-                lineage_response = request_with_backoff(lineage_url, headers, logger)
+                lineage_query = '{table_lineage{key,target_table_guids,object_type}}'
+                lineage_params = {
+                    "max_depth": 1,
+                    "direction": "right",
+                    "mode": "table",
+                    "query": lineage_query
+                }
+                lineage_url = f"{endpoint}/lineage/{table_obj['guid']}/"
+                lineage_response = request_with_backoff(lineage_url, headers, logger, params=lineage_params)
                 lineage = lineage_response.json()
 
                 # form connections
