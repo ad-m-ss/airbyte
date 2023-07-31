@@ -119,10 +119,10 @@ class SourceSelectStar(Source):
                 "database_name": {"type": "string"},
                 "schema_name": {"type": "string"},
                 "table_name": {"type": "string"},
-                "description": {"type": "string"},
-                "business_owner": {"type": "string"},
-                "technical_owner": {"type": "string"},
-                "row_count": {"type": "integer"},
+                "description": {"type": ["string", "null"]},
+                "business_owner": {"type": ["string", "null"]},
+                "technical_owner": {"type": ["string", "null"]},
+                "row_count": {"type": ["integer", "null"]},
             },
         }
         streams.append(
@@ -138,7 +138,11 @@ class SourceSelectStar(Source):
         json_schema = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
-            "properties": {"guid": {"type": "string"}, "target_guid": {"type": "string"}, "target_object_type": {"type": "string"}},
+            "properties": {
+                "guid": {"type": "string"},
+                "target_guid": {"type": "string"},
+                "target_object_type": {"type": "string"}
+            },
         }
         streams.append(
             AirbyteStream(
